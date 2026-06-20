@@ -12,12 +12,12 @@ terraform {
     }
   }
 
-  backend "azurerm" {
-    resource_group_name  = "ir-rag-tfstate-rg"
-    storage_account_name = "irragtfstate"
-    container_name       = "tfstate"
-    key                  = "ir-rag.terraform.tfstate"
-  }
+  # backend "azurerm" {
+  #   resource_group_name  = "ir-rag-tfstate-rg"
+  #   storage_account_name = "irragtfstate"
+  #   container_name       = "tfstate"
+  #   key                  = "ir-rag.terraform.tfstate"
+  # }
 }
 
 provider "azurerm" {
