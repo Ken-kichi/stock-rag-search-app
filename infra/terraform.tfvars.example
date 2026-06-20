@@ -1,0 +1,20 @@
+# このファイルをコピーして terraform.tfvars を作成してください
+# cp terraform.tfvars.example terraform.tfvars
+
+subscription_id     = "<your-azure-subscription-id>"
+resource_group_name = "ir-rag-rg"
+location            = "japaneast"
+openai_location     = "eastus"
+name_prefix         = "ir-rag"
+
+sql_admin_username = "iradmin"
+sql_admin_password = "<strong-password>"
+
+# Tavily Search API: https://app.tavily.com で無料登録して取得
+tavily_api_key = "<your-tavily-api-key>"
+
+tags = {
+  Project     = "ir-rag"
+  Environment = "production"
+  ManagedBy   = "terraform"
+}
