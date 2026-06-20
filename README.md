@@ -70,6 +70,7 @@
 | コンテナレジストリ | Azure Container Registry |
 | ホスティング | Azure Container Apps |
 | PDF取得バッチ | Azure Container Apps Jobs |
+| IaCツール | Terraform |
 | PDF解析 | PyMuPDF / pdfplumber |
 | IR資料取得 | EDINET API |
 
@@ -127,12 +128,32 @@ ir-rag/
 │   ├── Dockerfile
 │   └── requirements.txt
 │
-├── infra/                      # インフラ定義
-│   ├── bicep/
-│   │   ├── main.bicep
-│   │   ├── container_apps.bicep
-│   │   ├── search.bicep
-│   │   └── sql.bicep
+├── infra/                      # インフラ定義（Terraform）
+│   ├── main.tf                 # プロバイダー・バックエンド設定
+│   ├── variables.tf            # 変数定義
+│   ├── outputs.tf              # 出力値定義
+│   ├── terraform.tfvars        # 変数値（gitignore対象）
+│   ├── modules/
+│   │   ├── container_apps/     # Container Apps / Jobs
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── search/             # Azure AI Search
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── sql/                # Azure SQL Server
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── storage/            # Blob Storage
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   └── openai/             # Azure OpenAI
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── outputs.tf
 │   └── scripts/
 │       ├── deploy.sh
 │       └── create_index.py     # インデックス初期作成スクリプト
@@ -200,6 +221,7 @@ ir-rag/
 - Python 3.11以上
 - Docker / Docker Compose
 - Azure CLI
+- Terraform 1.7以上
 - Azureサブスクリプション
 
 ### 環境変数
@@ -266,11 +288,11 @@ az acr build --registry <your-acr> --image ir-frontend:latest ./frontend
 az acr build --registry <your-acr> --image ir-backend:latest ./backend
 az acr build --registry <your-acr> --image ir-indexer:latest ./indexer
 
-# Bicepでインフラをデプロイ
-az deployment group create \
-  --resource-group ir-rag-rg \
-  --template-file infra/bicep/main.bicep \
-  --parameters @infra/bicep/parameters.json
+# Terraformでインフラをデプロイ
+cd infra
+terraform init
+terraform plan -var-file="terraform.tfvars"
+terraform apply -var-file="terraform.tfvars"
 ```
 
 ---
