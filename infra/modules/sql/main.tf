@@ -20,7 +20,7 @@ resource "azurerm_mssql_database" "main" {
   server_id    = azurerm_mssql_server.main.id
   collation    = "Japanese_CI_AS"
   max_size_gb  = 2
-  sku_name     = "S0"
+  sku_name     = "Basic"
   tags         = var.tags
 }
 
