@@ -79,7 +79,7 @@
 ## ディレクトリ構成
 
 ```
-ir-rag/
+stock-rag-search-app/
 ├── app/                        # Streamlit + LangGraph（App Service B2）
 │   ├── app.py                  # メインエントリーポイント
 │   ├── pages/
@@ -325,7 +325,7 @@ python indexer/main.py --tickers 7203,9984,6758
 
 ## 開発ロードマップ
 
-- [x] システム設計・アーキテクチャ確定
+- [ ] システム設計・アーキテクチャ確定
 - [ ] Azure AI Searchインデックス構築
 - [ ] EDINET PDF取得・チャンキングパイプライン
 - [ ] LangGraph RAGパイプライン実装
