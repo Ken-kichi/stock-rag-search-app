@@ -20,17 +20,13 @@
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Streamlit (Container Apps)                  │
+│  Streamlit + LangGraph (App Service B2)      │
 │  単社分析 / 企業比較 / 投資情報 UI           │
-└────────────────────┬────────────────────────┘
-                     │ HTTP
-┌────────────────────▼────────────────────────┐
-│  FastAPI (Container Apps)                    │
-│  LangGraph RAGパイプライン                   │
 │  ┌──────────────────────────────────────┐   │
 │  │ クエリ分類 → クエリ変換 → Retriever  │   │
 │  │ → 関連度評価 → 回答生成 → 品質評価  │   │
 │  └──────────────────────────────────────┘   │
+│  WebJobs（PDF取得バッチ・スケジュール実行）  │
 └──────┬────────────────────┬─────────────────┘
        │                    │
 ┌──────▼──────┐    ┌────────▼────────┐
@@ -48,10 +44,6 @@
 │  Azure Blob Storage                          │
 │  PDFファイル本体                             │
 └─────────────────────────────────────────────┘
-┌─────────────────────────────────────────────┐
-│  Container Apps Jobs（バッチ）               │
-│  PDF自動取得・インデックス更新               │
-└─────────────────────────────────────────────┘
 ```
 
 ---
@@ -61,18 +53,26 @@
 | レイヤー | 技術 |
 |---|---|
 | フロントエンド | Streamlit |
-| バックエンド | FastAPI |
 | RAGオーケストレーション | LangGraph |
 | ベクトル検索 | Azure AI Search（Hybrid + Semantic Ranker） |
 | LLM | Azure OpenAI（GPT-4o / text-embedding-3-large） |
 | リレーショナルDB | Azure SQL Server |
 | ストレージ | Azure Blob Storage |
-| コンテナレジストリ | Azure Container Registry |
-| ホスティング | Azure Container Apps |
-| PDF取得バッチ | Azure Container Apps Jobs |
+| ホスティング | Azure App Service B2 |
+| PDF取得バッチ | App Service WebJobs |
 | IaCツール | Terraform |
 | PDF解析 | PyMuPDF / pdfplumber |
 | IR資料取得 | EDINET API |
+
+---
+
+## App Service SKU
+
+| App Service | SKU | 用途 | 月額目安 |
+|---|---|---|---|
+| ir-rag-app | B2（2コア・3.5GB） | Streamlit + LangGraph + WebJobs | 約3,600円 |
+
+> 使用しないときは `az webapp stop --name ir-rag-app --resource-group ir-rag-rg` で停止するとコストを抑えられます。
 
 ---
 
@@ -80,7 +80,7 @@
 
 ```
 ir-rag/
-├── frontend/                   # Streamlit アプリ
+├── app/                        # Streamlit + LangGraph（App Service B2）
 │   ├── app.py                  # メインエントリーポイント
 │   ├── pages/
 │   │   ├── single_analysis.py  # 単社分析モード
@@ -89,14 +89,6 @@ ir-rag/
 │   ├── components/
 │   │   ├── company_selector.py # 企業選択サイドバー
 │   │   └── citation_card.py    # 引用元表示コンポーネント
-│   ├── Dockerfile
-│   └── requirements.txt
-│
-├── backend/                    # FastAPI + LangGraph
-│   ├── main.py                 # FastAPI エントリーポイント
-│   ├── api/
-│   │   ├── search.py           # 検索エンドポイント
-│   │   └── companies.py        # 企業マスタエンドポイント
 │   ├── rag/
 │   │   ├── graph.py            # LangGraphグラフ定義
 │   │   ├── nodes/
@@ -113,28 +105,28 @@ ir-rag/
 │   ├── db/
 │   │   ├── models.py           # SQLAlchemyモデル
 │   │   └── crud.py             # DB操作
-│   ├── Dockerfile
+│   ├── webjobs/                # App Service WebJobs（バッチ）
+│   │   ├── run.py              # バッチエントリーポイント
+│   │   └── settings.job        # スケジュール設定（cron式）
 │   └── requirements.txt
 │
-├── indexer/                    # PDF取得・インデックス構築バッチ
-│   ├── main.py                 # バッチエントリーポイント
+├── indexer/                    # PDF取得・インデックス構築
+│   ├── main.py                 # エントリーポイント
 │   ├── fetchers/
 │   │   ├── edinet.py           # EDINET APIクライアント
 │   │   └── pdf_parser.py       # PDF解析（PyMuPDF / pdfplumber）
-│   ├── indexing/
-│   │   ├── chunker.py          # チャンキング処理
-│   │   ├── embedder.py         # 埋め込み生成
-│   │   └── search_client.py    # Azure AI Search投入
-│   ├── Dockerfile
-│   └── requirements.txt
+│   └── indexing/
+│       ├── chunker.py          # チャンキング処理
+│       ├── embedder.py         # 埋め込み生成
+│       └── search_client.py    # Azure AI Search投入
 │
 ├── infra/                      # インフラ定義（Terraform）
-│   ├── main.tf                 # プロバイダー・バックエンド設定
+│   ├── main.tf                 # プロバイダー・tfstateバックエンド設定
 │   ├── variables.tf            # 変数定義
-│   ├── outputs.tf              # 出力値定義
-│   ├── terraform.tfvars        # 変数値（gitignore対象）
+│   ├── outputs.tf              # デプロイ後のエンドポイントURL等を出力
+│   ├── terraform.tfvars        # 変数値（.gitignore対象）
 │   ├── modules/
-│   │   ├── container_apps/     # Container Apps / Jobs
+│   │   ├── app_service/        # App Service Plan + Web App
 │   │   │   ├── main.tf
 │   │   │   ├── variables.tf
 │   │   │   └── outputs.tf
@@ -155,10 +147,8 @@ ir-rag/
 │   │       ├── variables.tf
 │   │       └── outputs.tf
 │   └── scripts/
-│       ├── deploy.sh
 │       └── create_index.py     # インデックス初期作成スクリプト
 │
-├── docker-compose.yml          # ローカル開発用
 └── README.md
 ```
 
@@ -169,15 +159,15 @@ ir-rag/
 ```json
 {
   "fields": [
-    { "name": "id",            "type": "Edm.String",        "key": true },
-    { "name": "chunk_text",    "type": "Edm.String",        "searchable": true },
+    { "name": "id",            "type": "Edm.String",             "key": true },
+    { "name": "chunk_text",    "type": "Edm.String",             "searchable": true },
     { "name": "vector",        "type": "Collection(Edm.Single)", "dimensions": 1536 },
-    { "name": "company_name",  "type": "Edm.String",        "filterable": true, "facetable": true },
-    { "name": "ticker",        "type": "Edm.String",        "filterable": true },
-    { "name": "fiscal_year",   "type": "Edm.String",        "filterable": true, "facetable": true },
-    { "name": "doc_type",      "type": "Edm.String",        "filterable": true },
-    { "name": "section",       "type": "Edm.String",        "filterable": true },
-    { "name": "page_number",   "type": "Edm.Int32",         "filterable": true },
+    { "name": "company_name",  "type": "Edm.String",             "filterable": true, "facetable": true },
+    { "name": "ticker",        "type": "Edm.String",             "filterable": true },
+    { "name": "fiscal_year",   "type": "Edm.String",             "filterable": true, "facetable": true },
+    { "name": "doc_type",      "type": "Edm.String",             "filterable": true },
+    { "name": "section",       "type": "Edm.String",             "filterable": true },
+    { "name": "page_number",   "type": "Edm.Int32",              "filterable": true },
     { "name": "blob_url",      "type": "Edm.String" }
   ]
 }
@@ -219,7 +209,6 @@ ir-rag/
 ### 前提条件
 
 - Python 3.11以上
-- Docker / Docker Compose
 - Azure CLI
 - Terraform 1.7以上
 - Azureサブスクリプション
@@ -263,7 +252,9 @@ cd ir-rag
 cp .env.example .env
 # .env を編集して各種キーを設定
 
-docker compose up --build
+cd app
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
 アプリは `http://localhost:8501` で起動します。
@@ -275,24 +266,59 @@ docker compose up --build
 python infra/scripts/create_index.py
 
 # 企業リストを指定してIR資料を取得・インデックス投入
-docker compose run indexer python main.py --tickers 7203,9984,6758
+cd indexer
+pip install -r ../app/requirements.txt
+python main.py --tickers 7203,9984,6758
 ```
 
 ---
 
 ## Azure へのデプロイ
 
-```bash
-# Container Registryにイメージをプッシュ
-az acr build --registry <your-acr> --image ir-frontend:latest ./frontend
-az acr build --registry <your-acr> --image ir-backend:latest ./backend
-az acr build --registry <your-acr> --image ir-indexer:latest ./indexer
+### 1. Terraformでインフラを作成
 
-# Terraformでインフラをデプロイ
+```bash
 cd infra
 terraform init
 terraform plan -var-file="terraform.tfvars"
 terraform apply -var-file="terraform.tfvars"
+```
+
+### 2. アプリをデプロイ
+
+```bash
+cd app
+az webapp up \
+  --name ir-rag-app \
+  --resource-group ir-rag-rg \
+  --runtime "PYTHON:3.11" \
+  --sku B2
+```
+
+### 3. 環境変数をApp Serviceに設定
+
+```bash
+az webapp config appsettings set \
+  --name ir-rag-app \
+  --resource-group ir-rag-rg \
+  --settings \
+    AZURE_OPENAI_ENDPOINT="https://<your-resource>.openai.azure.com" \
+    AZURE_OPENAI_API_KEY="<your-key>" \
+    AZURE_SEARCH_ENDPOINT="https://<your-resource>.search.windows.net" \
+    AZURE_SEARCH_API_KEY="<your-key>" \
+    SQL_SERVER="<your-server>.database.windows.net" \
+    SQL_DATABASE="ir_rag_db" \
+    SQL_USERNAME="<your-username>" \
+    SQL_PASSWORD="<your-password>" \
+    AZURE_STORAGE_CONNECTION_STRING="<your-connection-string>" \
+    EDINET_API_KEY="<your-key>"
+```
+
+### 4. インデックス初期構築
+
+```bash
+python infra/scripts/create_index.py
+python indexer/main.py --tickers 7203,9984,6758
 ```
 
 ---
@@ -304,9 +330,9 @@ terraform apply -var-file="terraform.tfvars"
 - [ ] EDINET PDF取得・チャンキングパイプライン
 - [ ] LangGraph RAGパイプライン実装
 - [ ] Streamlit UI実装
-- [ ] Container Appsデプロイ
+- [ ] App Serviceデプロイ
 - [ ] RAGASによる精度評価・チューニング
-- [ ] Container Apps Jobsによる定期更新バッチ
+- [ ] WebJobsによる定期更新バッチ設定
 
 ---
 
