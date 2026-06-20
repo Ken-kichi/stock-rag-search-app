@@ -77,9 +77,9 @@ variable "openai_embedding_deployment" {
   default     = "text-embedding-3-large"
 }
 
-# EDINET
-variable "edinet_api_key" {
-  description = "EDINET APIキー"
+# Tavily Search API（Web検索によるIR資料発見）
+variable "tavily_api_key" {
+  description = "Tavily Search APIキー（https://app.tavily.com で取得）"
   type        = string
   sensitive   = true
 }

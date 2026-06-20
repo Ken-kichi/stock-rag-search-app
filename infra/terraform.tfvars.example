@@ -10,7 +10,8 @@ name_prefix         = "ir-rag"
 sql_admin_username = "iradmin"
 sql_admin_password = "<strong-password>"
 
-edinet_api_key = "<your-edinet-api-key>"
+# Tavily Search API: https://app.tavily.com で無料登録して取得
+tavily_api_key = "<your-tavily-api-key>"
 
 tags = {
   Project     = "ir-rag"

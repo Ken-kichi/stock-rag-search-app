@@ -80,20 +80,20 @@ module "app_service" {
   name_prefix         = var.name_prefix
 
   app_settings = {
-    AZURE_OPENAI_ENDPOINT            = module.openai.endpoint
-    AZURE_OPENAI_API_KEY             = module.openai.primary_key
-    AZURE_OPENAI_DEPLOYMENT_CHAT     = var.openai_chat_deployment
+    AZURE_OPENAI_ENDPOINT             = module.openai.endpoint
+    AZURE_OPENAI_API_KEY              = module.openai.primary_key
+    AZURE_OPENAI_DEPLOYMENT_CHAT      = var.openai_chat_deployment
     AZURE_OPENAI_DEPLOYMENT_EMBEDDING = var.openai_embedding_deployment
-    AZURE_SEARCH_ENDPOINT            = module.search.endpoint
-    AZURE_SEARCH_API_KEY             = module.search.primary_key
-    AZURE_SEARCH_INDEX_NAME          = var.search_index_name
-    SQL_SERVER                       = module.sql.server_fqdn
-    SQL_DATABASE                     = module.sql.database_name
-    SQL_USERNAME                     = var.sql_admin_username
-    SQL_PASSWORD                     = var.sql_admin_password
-    AZURE_STORAGE_CONNECTION_STRING  = module.storage.connection_string
-    AZURE_STORAGE_CONTAINER          = var.storage_container_name
-    EDINET_API_KEY                   = var.edinet_api_key
-    SCM_DO_BUILD_DURING_DEPLOYMENT   = "true"
+    AZURE_SEARCH_ENDPOINT             = module.search.endpoint
+    AZURE_SEARCH_API_KEY              = module.search.primary_key
+    AZURE_SEARCH_INDEX_NAME           = var.search_index_name
+    SQL_SERVER                        = module.sql.server_fqdn
+    SQL_DATABASE                      = module.sql.database_name
+    SQL_USERNAME                      = var.sql_admin_username
+    SQL_PASSWORD                      = var.sql_admin_password
+    AZURE_STORAGE_CONNECTION_STRING   = module.storage.connection_string
+    AZURE_STORAGE_CONTAINER           = var.storage_container_name
+    TAVILY_API_KEY                    = var.tavily_api_key
+    SCM_DO_BUILD_DURING_DEPLOYMENT    = "true"
   }
 }
